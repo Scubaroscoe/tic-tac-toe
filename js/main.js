@@ -11,9 +11,10 @@ const PlayerFactory = (name, mark) => {
 
 // Gameboard module:
 const Gameboard = (() => {
-  let board = [['', '', ''],
+
+	let board = [['', '', ''],
                 ['', '', ''],
-								['', '', '']];
+				['', '', '']];
 	const gameContainer = document.querySelector('#game-container');
 
 	initializeGame = () => {
@@ -32,6 +33,7 @@ const Gameboard = (() => {
 						board[row][column] = mark;
 						DisplayController.checkForGameEnd(board);
 						DisplayController.swapCurrent();
+						DisplayController.displayCurrentPlayer();
 					}
 				});
 				currentRow.appendChild(currentCell);
@@ -39,7 +41,17 @@ const Gameboard = (() => {
 			gameTable.appendChild(currentRow);
 		}
 		gameContainer.appendChild(gameTable);
+		DisplayController.displayCurrentPlayer();
 	};
+
+	clearBoard = () => {
+		while(gameContainer.firstChild) {
+			gameContainer.lastChild.remove();
+		}
+		board = [['', '', ''],
+                ['', '', ''],
+				['', '', '']];
+	}
 
 	changeBoard = (someBoard) => {
 		board = someBoard;
@@ -49,7 +61,7 @@ const Gameboard = (() => {
 
 	// Invoke to setup gameboard right away
 	// initializeGame();
-	return {changeBoard, getBoard, initializeGame};
+	return {changeBoard, getBoard, initializeGame, clearBoard};
 })();
 
 // Gameboard.initializeGame();
@@ -65,6 +77,10 @@ const DisplayController = ((gameboard) => {
 	const startButton = document.querySelector('#start-button');
 	const firstInput = document.querySelector('#first-input');
 	const secondInput = document.querySelector('#second-input');
+	const resultContainer = document.querySelector('#result-container');
+	const playerDisplay = document.querySelector('#player-current');
+	const winnerDisplay = document.createElement('p');
+	const restartButton = document.createElement('button');
 
 	document.addEventListener('keyup', (e) => {
 		if (firstInput.value && secondInput.value) {
@@ -75,8 +91,8 @@ const DisplayController = ((gameboard) => {
 	});
 
 	startButton.addEventListener('click', (e) =>{
-		firstPlayer = PlayerFactory(firstInput.textContent, 'X');
-		secondPlayer = PlayerFactory(secondInput.textContent, 'O');
+		firstPlayer = PlayerFactory(firstInput.value, 'X');
+		secondPlayer = PlayerFactory(secondInput.value, 'O');
 		currentPlayer = firstPlayer;
 
 		const playerForms = document.querySelector('#player-forms');
@@ -84,12 +100,40 @@ const DisplayController = ((gameboard) => {
 		Gameboard.initializeGame();
 	});
 
+	displayCurrentPlayer = () => {
+		let output = `Current player is: ${currentPlayer.name}`;
+		playerDisplay.textContent = output;
+	}
+	
 	swapCurrent = () => {
 		currentPlayer = currentPlayer === firstPlayer ? secondPlayer : firstPlayer;
 	};
 
 	getCurrentPlayer = () => {
 		return currentPlayer;
+	}
+
+	restartGame = (e) => {
+		Gameboard.clearBoard();
+		winnerDisplay.remove();
+		currentPlayer = firstPlayer;
+		displayCurrentPlayer();
+		Gameboard.initializeGame();
+		e.target.remove();
+	}
+
+	endgameBusywork = (string) => {
+		let win;
+		if (string === "win") {
+			win = `${currentPlayer.name} won!`;
+		} else {
+			win = "It's a tie...";
+		}
+		winnerDisplay.textContent = win;
+		resultContainer.appendChild(winnerDisplay);
+		restartButton.addEventListener('click', restartGame);
+		restartButton.textContent = "Restart";
+		resultContainer.appendChild(restartButton);
 	}
 
 	checkForGameEnd = (board) => {
@@ -99,9 +143,9 @@ const DisplayController = ((gameboard) => {
 		// three diagonal from topleft to bottom right
 		// three diagona from bottom left to top right
 		if (checkRows(board) || checkColumns(board) || checkDiagonal(board)) {
-			alert(`${currentPlayer.name} won!`);
+			endgameBusywork("win");
 		} else if (checkTie(board)) {
-			alert("It's a tie...");
+			endgameBusywork("tie");
 		}
 	};
 
@@ -149,7 +193,7 @@ const DisplayController = ((gameboard) => {
 	};
 	
 
-	return {getCurrentPlayer, swapCurrent, checkForGameEnd};
+	return {getCurrentPlayer, swapCurrent, checkForGameEnd, displayCurrentPlayer};
 // })(pc, npc, gameboard);
 })(gameboard);
 
